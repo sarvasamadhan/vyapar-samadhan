@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>फीडबैक - सर्व समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background: #eef2f7; padding: 20px; text-align: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; max-width: 450px; margin: auto; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        h2 { color: #1e3a8a; margin-bottom: 6px; }
+        .sub { color: #64748b; font-size: 13px; margin-bottom: 20px; }
+        .stars { font-size: 36px; color: #cbd5e1; cursor: pointer; margin-bottom: 15px; display: flex; justify-content: center; gap: 8px; }
+        .stars .star.active { color: #fbbf24; }
+        textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 14px; resize: vertical; min-height: 80px; margin-bottom: 12px; }
+        input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 14px; margin-bottom: 12px; }
+        .btn { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn:hover { background: #1d4ed8; }
+        .thanks { display: none; color: #16a34a; font-weight: bold; margin-top: 15px; font-size: 16px; }
+        .check-group { text-align: left; margin-bottom: 12px; }
+        .check-group label { display: block; padding: 6px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>📝 आपकी राय</h2>
+    <p class="sub">हमें बताएँ कि ऐप कैसा लगा</p>
+
+    <div class="stars" id="starBox">
+        <span class="star" onclick="rate(1)">⭐</span>
+        <span class="star" onclick="rate(2)">⭐</span>
+        <span class="star" onclick="rate(3)">⭐</span>
+        <span class="star" onclick="rate(4)">⭐</span>
+        <span class="star" onclick="rate(5)">⭐</span>
+    </div>
+
+    <textarea id="msg" placeholder="क्या अच्छा लगा? क्या सुधार चाहिए?"></textarea>
+
+    <div class="check-group">
+        <label><input type="checkbox" value="आसान बिल"> 📝 बिल बनाना आसान हो</label>
+        <label><input type="checkbox" value="स्टॉक मैनेजमेंट"> 📦 स्टॉक बेहतर हो</label>
+        <label><input type="checkbox" value="रिपोर्ट"> 📊 रिपोर्ट और डिटेल हो</label>
+        <label><input type="checkbox" value="भाषा"> 🌐 भाषा में सुधार</label>
+        <label><input type="checkbox" value="डिज़ाइन"> 🎨 डिज़ाइन सुधार</label>
+        <label><input type="checkbox" value="अन्य"> ✍️ कुछ और</label>
+    </div>
+
+    <input type="text" id="mobile" placeholder="आपका मोबाइल नंबर (वैकल्पिक)">
+
+    <button class="btn" onclick="submitFeedback()">📨 फीडबैक भेजें</button>
+    <p class="thanks" id="thanksMsg">✅ धन्यवाद! आपका फीडबैक भेज दिया गया।</p>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let rating = 0;
+
+    function rate(n) {
+        rating = n;
+        const stars = document.querySelectorAll(".star");
+        stars.forEach((s, i) => {
+            s.classList.toggle("active", i < n);
+        });
+    }
+
+    async function submitFeedback() {
+        const msg = document.getElementById("msg").value.trim();
+        const mobile = document.getElementById("mobile").value.trim();
+        const checks = [...document.querySelectorAll(".check-group input:checked")].map(c => c.value).join(", ");
+
+        if (!msg && rating === 0) { alert("कृपया कम से कम रेटिंग या संदेश दें!"); return; }
+
+        const { error } = await sb.from("feedback").insert([{
+            rating, message: msg, suggestions: checks, mobile: mobile || null, created_at: new Date().toISOString()
+        }]);
+
+        if (!error) {
+            document.getElementById("thanksMsg").style.display = "block";
+            document.querySelector(".btn").disabled = true;
+        } else {
+            alert("कुछ गड़बड़ हुई। कृपया दोबारा कोशिश करें।");
+        }
+    }
+</script>
+</body>
+</html>
