@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>स्टाफ़ प्रबंधन - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; color: #1e293b; padding: 15px; padding-bottom: 30px; }
+        .header { background: linear-gradient(145deg, #0f2b5c, #1e3a8a 40%, #2563eb); color: white; padding: 18px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(30,58,138,0.2); }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .lang-btn { background: white; color: #1e3a8a; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .section { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .section-title { font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .staff-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+        .staff-card .row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 12px; }
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-pending { background: #fef3c7; color: #92400e; }
+        .btn-sm { border: none; padding: 6px 12px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .btn-approve { background: #10b981; color: white; }
+        .btn-reject { background: #ef4444; color: white; }
+        .btn-outline-sm { background: white; color: #1e3a8a; border: 1px solid #1e3a8a; }
+        .btn-primary { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px; margin-top: 5px; }
+        .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .perm-item { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 id="pageTitle">👥 स्टाफ़ प्रबंधन</h2>
+    <div style="display: flex; gap: 8px;">
+        <button class="nav-btn" onclick="goBack()">⬅ <span id="backLabel">वापस</span></button>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+</div>
+
+<div id="staffView"></div>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentSession = null, currentLang = localStorage.getItem("app_language") || "hi";
+
+    const dict = {
+        hi: { pageTitle:"👥 स्टाफ़ प्रबंधन", backLabel:"वापस", langToggle:"English", staffListTitle:"📋 स्टाफ़ सूची", pendingTitle:"⏳ अप्रूवल हेतु", addStaffBtn:"➕ नया स्टाफ़ जोड़ें", noStaff:"कोई स्टाफ़ नहीं है।", ownerView:"👑 आप मालिक हैं", staffViewTitle:"👤 मेरी जानकारी", permissions:"अनुमतियाँ", attendance:"📅 मेरी हाज़िरी", active:"सक्रिय", inactive:"निष्क्रिय", pending:"लंबित" },
+        en: { pageTitle:"👥 Staff Management", backLabel:"Back", langToggle:"हिंदी", staffListTitle:"📋 Staff List", pendingTitle:"⏳ Pending Approval", addStaffBtn:"➕ Add New Staff", noStaff:"No staff members.", ownerView:"👑 You are the owner", staffViewTitle:"👤 My Info", permissions:"Permissions", attendance:"📅 My Attendance", active:"Active", inactive:"Inactive", pending:"Pending" }
+    };
+
+    function applyLang() { const t=dict[currentLang]; for(let id in t){ let el=document.getElementById(id); if(el&&typeof t[id]==='string') el.innerText=t[id]; } renderView(); }
+    function toggleLang() { currentLang=currentLang==="hi"?"en":"hi"; localStorage.setItem("app_language",currentLang); applyLang(); }
+
+    async function renderView() {
+        const t = dict[currentLang];
+        const container = document.getElementById("staffView");
+        if (currentSession.role === "STAFF") {
+            const { data } = await sb.from("staff").select("*").eq("phone", currentSession.phone).eq("shop_code", currentSession.shop_code).single();
+            if (data) {
+                container.innerHTML = `<div class="section"><div class="section-title">${t.staffViewTitle}</div>
+                    <p><b>नाम:</b> ${data.name}</p><p><b>मोबाइल:</b> ${data.phone}</p><p><b>भूमिका:</b> ${data.role}</p>
+                    <p><b>स्थिति:</b> <span class="badge ${data.status==='APPROVED'?'badge-active':(data.status==='PENDING'?'badge-pending':'badge-inactive')}">${data.status}</span></p>
+                    <p><b>${t.permissions}:</b> ${data.permissions||'सभी बेसिक'}</p>
+                    <button class="btn-primary" onclick="alert('हाज़िरी जल्द आ रही है')">${t.attendance}</button></div>`;
+            }
+            return;
+        }
+        const { data: staffList } = await sb.from("staff").select("*").eq("shop_code", currentSession.shop_code);
+        let html = `<div class="section"><div class="section-title">${t.staffListTitle}</div>`;
+        if (!staffList || staffList.length === 0) { html += `<p>${t.noStaff}</p>`; }
+        else {
+            staffList.forEach(s => {
+                const statusBadge = s.status === "APPROVED" ? "badge-active" : (s.status === "PENDING" ? "badge-pending" : "badge-inactive");
+                const statusText = s.status === "APPROVED" ? t.active : (s.status === "PENDING" ? t.pending : t.inactive);
+                html += `<div class="staff-card"><div class="row"><div><b>${s.name}</b><br><small>${s.phone} | ${s.role}</small></div><span class="badge ${statusBadge}">${statusText}</span></div>`;
+                if (s.status === "PENDING") {
+                    html += `<div style="margin-top:8px;"><button class="btn-sm btn-approve" onclick="approveStaff('${s.id}')">✅</button> <button class="btn-sm btn-reject" onclick="rejectStaff('${s.id}')">❌</button></div>`;
+                } else if (s.status === "APPROVED") {
+                    html += `<div style="margin-top:8px;"><button class="btn-sm btn-outline-sm" onclick="toggleStaff('${s.id}','INACTIVE')">⏸️ निष्क्रिय करें</button> <button class="btn-sm btn-outline-sm" onclick="alert('अधिकार जल्द')">🔧 अधिकार</button></div>`;
+                } else {
+                    html += `<div style="margin-top:8px;"><button class="btn-sm btn-approve" onclick="toggleStaff('${s.id}','APPROVED')">🔄 पुनः सक्रिय करें</button></div>`;
+                }
+                html += `</div>`;
+            });
+        }
+        html += `<button class="btn-primary" onclick="window.location.href='vyapar_login.html'">${t.addStaffBtn}</button></div>`;
+        container.innerHTML = html;
+    }
+
+    async function approveStaff(id) { await sb.from("staff").update({status:"APPROVED"}).eq("id",id); renderView(); }
+    async function rejectStaff(id) { await sb.from("staff").delete().eq("id",id); renderView(); }
+    async function toggleStaff(id, status) { await sb.from("staff").update({status}).eq("id",id); renderView(); }
+
+    function goBack() { window.location.href = currentSession.role === "MERCHANT" ? "settings.html" : "dashboard.html"; }
+
+    window.onload = async () => {
+        const s = localStorage.getItem("merchant_session");
+        if (!s) { window.location.href = "vyapar_login.html"; return; }
+        currentSession = JSON.parse(s);
+        applyLang();
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सेटिंग्स - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; color: #1e293b; padding: 15px; padding-bottom: 30px; }
+        .header { background: linear-gradient(145deg, #0f2b5c, #1e3a8a 40%, #2563eb); color: white; padding: 18px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(30,58,138,0.2); }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .lang-btn { background: white; color: #1e3a8a; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .section { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .section-title { font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { font-size: 12px; font-weight: 700; color: #475569; display: block; margin-bottom: 4px; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; background: #f8fafc; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        textarea { resize: vertical; min-height: 60px; }
+        .btn-primary { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px; margin-top: 5px; }
+        .btn-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px; margin-top: 5px; }
+        .btn-outline { background: white; color: #1e3a8a; border: 2px solid #1e3a8a; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px; margin-top: 5px; }
+        .success-toast { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 24px; border-radius: 30px; font-weight: 700; z-index: 1000; box-shadow: 0 8px 20px rgba(16,185,129,0.3); }
+    </style>
+</head>
+<body>
+
+<div id="toast" class="success-toast">✅ सफलतापूर्वक सेव हो गया!</div>
+
+<div class="header">
+    <h2 id="pageTitle">⚙️ सेटिंग्स</h2>
+    <div style="display: flex; gap: 8px;">
+        <button class="nav-btn" onclick="goBack()">⬅ <span id="backLabel">वापस</span></button>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title" id="profileTitle">🏪 दुकान की प्रोफ़ाइल</div>
+    <div class="input-group"><label id="shopNameLabel">दुकान का नाम</label><input type="text" id="shopName"></div>
+    <div class="input-group"><label id="shopAddressLabel">दुकान का पता</label><textarea id="shopAddress" placeholder="पूरा पता लिखें"></textarea></div>
+    <div class="input-group"><label id="shopPhoneLabel">फ़ोन नंबर</label><input type="tel" id="shopPhone"></div>
+    <div class="input-group"><label id="gstLabel">GST नंबर (वैकल्पिक)</label><input type="text" id="gstNumber" maxlength="15"></div>
+    <button class="btn-primary" onclick="saveProfile()" id="saveProfileBtn">💾 प्रोफ़ाइल सेव करें</button>
+</div>
+
+<div class="section">
+    <div class="section-title" id="securityTitle">🔐 सुरक्षा</div>
+    <div class="input-group"><label id="newPinLabel">नया PIN (6 अंक)</label><input type="password" id="newPin" maxlength="6" placeholder="नया PIN डालें"></div>
+    <div class="input-group"><label id="confirmPinLabel">PIN पुष्टि करें</label><input type="password" id="confirmPin" maxlength="6" placeholder="PIN दोबारा डालें"></div>
+    <div class="input-group"><label id="recoveryPhoneLabel">रिकवरी मोबाइल</label><input type="tel" id="recoveryPhone"></div>
+    <div class="input-group"><label id="recoveryEmailLabel">रिकवरी ईमेल</label><input type="email" id="recoveryEmail"></div>
+    <button class="btn-primary" onclick="saveSecurity()" id="saveSecurityBtn">🔒 सुरक्षा अपडेट करें</button>
+</div>
+
+<div class="section">
+    <div class="section-title" id="billSettingsTitle">🧾 बिल सेटिंग्स</div>
+    <div class="input-group"><label id="thankYouLabel">बिल के नीचे धन्यवाद संदेश</label><input type="text" id="thankYouMsg" placeholder="जैसे: आपके सहयोग के लिए धन्यवाद!"></div>
+    <button class="btn-primary" onclick="saveBillSettings()" id="saveBillBtn">🧾 बिल सेटिंग्स सेव करें</button>
+</div>
+
+<div class="section"><button class="btn-outline" onclick="window.location.href='staff.html'" id="staffBtn">👥 स्टाफ़ मैनेज करें</button></div>
+<div class="section"><button class="btn-outline" onclick="exportData()" id="exportBtn">📥 सारा डेटा एक्सपोर्ट करें</button></div>
+<div class="section"><button class="btn-danger" onclick="deleteAccount()" id="deleteBtn">🗑️ खाता स्थायी रूप से हटाएँ</button></div>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentSession = null, currentMerchant = null, currentLang = localStorage.getItem("app_language") || "hi";
+
+    const dict = {
+        hi: {
+            pageTitle:"⚙️ सेटिंग्स", backLabel:"वापस", langToggle:"English",
+            profileTitle:"🏪 दुकान की प्रोफ़ाइल", shopNameLabel:"दुकान का नाम", shopAddressLabel:"दुकान का पता", shopPhoneLabel:"फ़ोन नंबर", gstLabel:"GST नंबर (वैकल्पिक)", saveProfileBtn:"💾 प्रोफ़ाइल सेव करें",
+            securityTitle:"🔐 सुरक्षा", newPinLabel:"नया PIN (6 अंक)", confirmPinLabel:"PIN पुष्टि करें", recoveryPhoneLabel:"रिकवरी मोबाइल", recoveryEmailLabel:"रिकवरी ईमेल", saveSecurityBtn:"🔒 सुरक्षा अपडेट करें",
+            billSettingsTitle:"🧾 बिल सेटिंग्स", thankYouLabel:"बिल के नीचे धन्यवाद संदेश", saveBillBtn:"🧾 बिल सेटिंग्स सेव करें",
+            staffBtn:"👥 स्टाफ़ मैनेज करें", exportBtn:"📥 सारा डेटा एक्सपोर्ट करें", deleteBtn:"🗑️ खाता स्थायी रूप से हटाएँ",
+            toastSaved:"✅ सफलतापूर्वक सेव हो गया!", alertDelete:"क्या आप वाकई अपना खाता हटाना चाहते हैं?", alertPinMismatch:"PIN मेल नहीं खा रहे!",
+            pinRequired:"खाता हटाने के लिए अपना 6 अंकों का PIN डालें:", pinIncorrect:"PIN गलत है! खाता नहीं हटाया जाएगा।",
+            otpSent:"आपके मोबाइल पर OTP भेजा गया है।", enterOtp:"OTP डालें:", otpIncorrect:"OTP गलत है! खाता नहीं हटाया जाएगा।",
+            accountDeactivated:"आपका खाता निष्क्रिय कर दिया गया है। 30 दिनों के भीतर सपोर्ट से संपर्क करके पुनः सक्रिय करवा सकते हैं।"
+        },
+        en: {
+            pageTitle:"⚙️ Settings", backLabel:"Back", langToggle:"हिंदी",
+            profileTitle:"🏪 Shop Profile", shopNameLabel:"Shop Name", shopAddressLabel:"Shop Address", shopPhoneLabel:"Phone Number", gstLabel:"GST Number (optional)", saveProfileBtn:"💾 Save Profile",
+            securityTitle:"🔐 Security", newPinLabel:"New PIN (6 digits)", confirmPinLabel:"Confirm PIN", recoveryPhoneLabel:"Recovery Mobile", recoveryEmailLabel:"Recovery Email", saveSecurityBtn:"🔒 Update Security",
+            billSettingsTitle:"🧾 Bill Settings", thankYouLabel:"Thank You Message on Bill", saveBillBtn:"🧾 Save Bill Settings",
+            staffBtn:"👥 Manage Staff", exportBtn:"📥 Export All Data", deleteBtn:"🗑️ Delete Account Permanently",
+            toastSaved:"✅ Saved successfully!", alertDelete:"Are you sure you want to delete your account?", alertPinMismatch:"PINs do not match!",
+            pinRequired:"Enter your 6-digit PIN to delete account:", pinIncorrect:"Incorrect PIN! Account not deleted.",
+            otpSent:"OTP sent to your mobile.", enterOtp:"Enter OTP:", otpIncorrect:"Incorrect OTP! Account not deleted.",
+            accountDeactivated:"Your account has been deactivated. Contact support within 30 days to reactivate."
+        }
+    };
+
+    function applyLang() { const t=dict[currentLang]; for(let id in t){ let el=document.getElementById(id); if(el&&typeof t[id]==='string') el.innerText=t[id]; } }
+    function toggleLang() { currentLang=currentLang==="hi"?"en":"hi"; localStorage.setItem("app_language",currentLang); applyLang(); }
+    async function loadProfile() { if(!currentMerchant) return; document.getElementById("shopName").value=currentMerchant.shop_name||""; document.getElementById("shopAddress").value=currentMerchant.address||""; document.getElementById("shopPhone").value=currentMerchant.recovery_phone||""; document.getElementById("gstNumber").value=currentMerchant.gst_number||""; document.getElementById("recoveryPhone").value=currentMerchant.recovery_phone||""; document.getElementById("recoveryEmail").value=currentMerchant.recovery_email||""; document.getElementById("thankYouMsg").value=currentMerchant.thank_you_msg||""; }
+    async function saveProfile() { const u={ shop_name:document.getElementById("shopName").value.trim(), address:document.getElementById("shopAddress").value.trim(), recovery_phone:document.getElementById("shopPhone").value.trim(), gst_number:document.getElementById("gstNumber").value.trim()||null }; const {error}=await sb.from("merchants").update(u).eq("shop_code",currentSession.shop_code); if(!error){ showToast(); currentMerchant={...currentMerchant,...u}; } else alert(error.message); }
+    async function saveSecurity() { const pin=document.getElementById("newPin").value.trim(), confirm=document.getElementById("confirmPin").value.trim(); if(pin){ if(pin.length!==6||isNaN(pin)){ alert("PIN 6 अंकों का होना चाहिए!"); return; } if(pin!==confirm){ alert(dict[currentLang].alertPinMismatch); return; } } const u={ recovery_phone:document.getElementById("recoveryPhone").value.trim()||null, recovery_email:document.getElementById("recoveryEmail").value.trim()||null }; if(pin) u.pin=pin; const {error}=await sb.from("merchants").update(u).eq("shop_code",currentSession.shop_code); if(!error){ showToast(); document.getElementById("newPin").value=""; document.getElementById("confirmPin").value=""; } else alert(error.message); }
+    async function saveBillSettings() { const u={ thank_you_msg:document.getElementById("thankYouMsg").value.trim() }; const {error}=await sb.from("merchants").update(u).eq("shop_code",currentSession.shop_code); if(!error){ showToast(); currentMerchant.thank_you_msg=u.thank_you_msg; } else alert(error.message); }
+    function showToast() { const t=document.getElementById("toast"); t.innerText=dict[currentLang].toastSaved; t.style.display="block"; setTimeout(()=>{ t.style.display="none"; },2500); }
+    async function exportData() { const {data:bills}=await sb.from("transactions").select("*").eq("shop_code",currentSession.shop_code); const {data:staff}=await sb.from("staff").select("*").eq("shop_code",currentSession.shop_code); const allData={ profile:currentMerchant, bills, staff }; const blob=new Blob([JSON.stringify(allData,null,2)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="vyapar_data.json"; a.click(); }
+
+    async function deleteAccount() {
+        const t=dict[currentLang];
+        if(!confirm(t.alertDelete)) return;
+        const pin=prompt(t.pinRequired);
+        if(!pin||pin!==currentMerchant.pin){ alert(t.pinIncorrect); return; }
+        if(currentMerchant.recovery_phone){
+            const otp=Math.floor(100000+Math.random()*900000).toString();
+            alert(t.otpSent);
+            const userOtp=prompt(t.enterOtp);
+            if(userOtp!==otp){ alert(t.otpIncorrect); return; }
+        }
+        const {error}=await sb.from("merchants").update({ deleted_at:new Date().toISOString(), is_active:false }).eq("shop_code",currentSession.shop_code);
+        if(error){ alert("कुछ त्रुटि हुई। खाता सुरक्षित है।"); return; }
+        localStorage.removeItem("merchant_session");
+        alert(t.accountDeactivated);
+        window.location.href="index.html";
+    }
+
+    function goBack() { window.location.href="dashboard.html"; }
+    window.onload=async()=>{ applyLang(); const s=localStorage.getItem("merchant_session"); if(!s){ window.location.href="vyapar_login.html"; return; } currentSession=JSON.parse(s); const {data}=await sb.from("merchants").select("*").eq("shop_code",currentSession.shop_code).single(); if(data){ currentMerchant=data; loadProfile(); } else { localStorage.removeItem("merchant_session"); window.location.href="vyapar_login.html"; } };
+</script>
+</body>
+</html>

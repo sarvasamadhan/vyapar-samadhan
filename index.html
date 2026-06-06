@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सर्व समाधान - सीतापुर का सुपर ऐप</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #0f172a; color: white; text-align: center; padding-bottom: 90px; }
+        .top-header { padding: 25px 20px 20px; background: linear-gradient(to bottom, #1e3a8a, #0f172a); border-radius: 0 0 30px 30px; }
+        .logo { font-size: 32px; font-weight: 900; color: #60a5fa; margin-bottom: 15px; }
+        .search-box { background: white; border-radius: 50px; display: flex; align-items: center; padding: 5px 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .search-box input { border: none; outline: none; width: 100%; padding: 10px; font-size: 15px; color: #334155; }
+        .mic-icon { font-size: 20px; cursor: pointer; color: #3b82f6; margin-left: 10px; }
+        .sponsor-slider { background: white; margin: 15px; border-radius: 15px; padding: 10px; color: #1e293b; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 2px solid #f59e0b; text-align: left;}
+        .sponsor-text { font-size: 14px; font-weight: bold; color: #b45309; }
+        .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; padding: 15px; max-width: 600px; margin: auto; }
+        .card { background: #1e293b; padding: 15px 5px; border-radius: 15px; border: 1px solid #334155; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 10px rgba(0,0,0,0.3); }
+        .icon { font-size: 32px; margin-bottom: 5px; display: block;}
+        .card h3 { margin: 0; font-size: 13px; }
+        .section-title { text-align: left; padding: 5px 20px; margin-top: 15px; font-size: 16px; font-weight: bold; border-left: 4px solid; }
+        .title-public { color: #60a5fa; border-color: #60a5fa; }
+        .title-business { color: #f59e0b; border-color: #f59e0b; margin-top: 20px; }
+        .sticky-ad { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; color: #1e293b; text-align: center; padding: 10px 0; font-size: 13px; font-weight: bold; z-index: 1000; border-top: 2px solid #ddd; }
+        .floating-bot { position: fixed; bottom: 50px; right: 20px; background: #fbbf24; width: 55px; height: 55px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; box-shadow: 0 5px 15px rgba(251, 191, 36, 0.5); cursor: pointer; border: 2px solid white; z-index: 1001; animation: bounce 2s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    </style>
+</head>
+<body>
+
+<div class="top-header">
+    <div class="logo" id="logoText">🌐 सर्व समाधान</div>
+    <div style="text-align:right; padding:5px 20px;">
+        <button id="langToggleIndex" onclick="toggleLangIndex()" style="background: white; color: #1e3a8a; border: none; padding: 6px 12px; border-radius: 15px; font-weight: bold; cursor: pointer; font-size: 13px;">English</button>
+    </div>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="सीतापुर में आपको क्या खोजना है?">
+        <span class="mic-icon" id="micIcon" onclick="alert(this.getAttribute('data-alert'))" data-alert="सुन रहा हूँ... बोलिए">🎤</span>
+    </div>
+</div>
+
+<div class="sponsor-slider">
+    <span style="font-size: 10px; background: #f3f4f6; padding: 2px 8px; border-radius: 10px; color: gray; float: right;">Sponsored</span>
+    <div class="sponsor-text" id="sponsorText">यहाँ सीतापुर के बड़े स्कूल या ज्वैलर का विज्ञापन चलेगा!</div>
+    <p style="font-size: 11px; margin: 5px 0 0 0; color: #64748b;" id="sponsorContact">विज्ञापन लगवाने के लिए संपर्क करें: 📞 पवन जी</p>
+</div>
+
+<div class="section-title title-public" id="publicTitle">🌟 सीतापुर की जनता के लिए</div>
+<div class="services" id="publicServices">
+    <div class="card" style="border-color: #f59e0b;" onclick="comingSoon('bazaar')"><span class="icon">🛒</span><h3>बाज़ार भाव</h3></div>
+    <div class="card" onclick="comingSoon('hunar')"><span class="icon">🛠️</span><h3>हुनर</h3></div>
+    <div class="card" style="border-color: #10b981;" onclick="comingSoon('yatra')"><span class="icon">🛺</span><h3>यात्रा व टिकट</h3></div>
+    <div class="card" style="border-color: #ef4444;" onclick="comingSoon('purana')"><span class="icon">🛋️</span><h3>पुराना बाज़ार</h3></div>
+    <div class="card" onclick="comingSoon('shiksha')"><span class="icon">🎓</span><h3>शिक्षा</h3></div>
+    <div class="card" style="border-color: #4338ca;" onclick="comingSoon('rozgar')"><span class="icon">💼</span><h3>रोजगार (Jobs)</h3></div>
+</div>
+
+<div class="section-title title-business" id="businessTitle">💼 दुकानदारों व पार्टनर्स के लिए</div>
+<div class="services" id="businessServices">
+    <div class="card" style="background: #1e3a8a; border-color: #3b82f6;" onclick="window.location.href='vyapar_login.html'">
+        <span class="icon">📦</span><h3 style="color:white;" id="shopBtnText">अपनी दुकान चलाएं</h3>
+    </div>
+    <div class="card" style="background: #064e3b; border-color: #10b981;" onclick="comingSoon('partner')">
+        <span class="icon">🤝</span><h3 style="color:white;" id="partnerBtnText">पार्टनर बनें</h3>
+    </div>
+</div>
+
+<div style="margin-top:20px; padding-bottom:30px;">
+    <a id="supportLink" href="https://wa.me/918960220009?text=नमस्ते पवन जी, मुझे मदद चाहिए: " style="color: #60a5fa; text-decoration: none; font-size: 14px;">🎧 सहायता के लिए आवाज़ दें (Support)</a>
+</div>
+
+<div class="sticky-ad">
+    <span style="background: #f59e0b; color: white; padding: 2px 5px; border-radius: 3px; font-size: 10px; margin-right: 5px;">Ad</span>
+    <span id="stickyAdText">HDFC Bank से सबसे सस्ता पर्सनल लोन लें! अभी अप्लाई करें।</span>
+</div>
+
+<div class="floating-bot" id="floatingBot" onclick="comingSoon('helpdesk')">🤖</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    const idxLang = {
+        hi: {
+            langToggle: "English",
+            logo: "🌐 सर्व समाधान",
+            searchPlaceholder: "सीतापुर में आपको क्या खोजना है?",
+            micAlert: "सुन रहा हूँ... बोलिए",
+            sponsorText: "यहाँ सीतापुर के बड़े स्कूल या ज्वैलर का विज्ञापन चलेगा!",
+            sponsorContact: "विज्ञापन लगवाने के लिए संपर्क करें: 📞 पवन जी",
+            publicTitle: "🌟 सीतापुर की जनता के लिए",
+            businessTitle: "💼 दुकानदारों व पार्टनर्स के लिए",
+            bazaar: "बाज़ार भाव",
+            hunar: "हुनर",
+            yatra: "यात्रा व टिकट",
+            purana: "पुराना बाज़ार",
+            shiksha: "शिक्षा",
+            rozgar: "रोजगार (Jobs)",
+            shopBtn: "अपनी दुकान चलाएं",
+            partnerBtn: "पार्टनर बनें",
+            support: "🎧 सहायता के लिए आवाज़ दें (Support)",
+            supportWhatsAppMsg: "नमस्ते पवन जी, मुझे मदद चाहिए: ",
+            stickyAd: "HDFC Bank से सबसे सस्ता पर्सनल लोन लें! अभी अप्लाई करें।",
+            comingSoon: (feat) => `🚧 ${feat} जल्द ही उपलब्ध होगा! कृपया प्रतीक्षा करें।`
+        },
+        en: {
+            langToggle: "हिंदी",
+            logo: "🌐 Sarv Samadhan",
+            searchPlaceholder: "What are you looking for in Sitapur?",
+            micAlert: "Listening... Speak now",
+            sponsorText: "Advertisement of big schools or jewellers of Sitapur will run here!",
+            sponsorContact: "Contact for Ads: 📞 Pawan Ji",
+            publicTitle: "🌟 For the People of Sitapur",
+            businessTitle: "💼 For Shopkeepers & Partners",
+            bazaar: "Market Prices",
+            hunar: "Skills",
+            yatra: "Travel & Tickets",
+            purana: "Old Bazaar",
+            shiksha: "Education",
+            rozgar: "Jobs",
+            shopBtn: "Run Your Shop",
+            partnerBtn: "Become a Partner",
+            support: "🎧 Call for Help (Support)",
+            supportWhatsAppMsg: "Hello Pawan Ji, I need help: ",
+            stickyAd: "Get the cheapest Personal Loan from HDFC Bank! Apply now.",
+            comingSoon: (feat) => `🚧 ${feat} Coming Soon! Please wait.`
+        }
+    };
+
+    const featureKeys = {
+        bazaar: { hi: "बाज़ार भाव", en: "Market Prices" },
+        hunar: { hi: "हुनर", en: "Skills" },
+        yatra: { hi: "यात्रा व टिकट", en: "Travel & Tickets" },
+        purana: { hi: "पुराना बाज़ार", en: "Old Bazaar" },
+        shiksha: { hi: "शिक्षा", en: "Education" },
+        rozgar: { hi: "रोजगार (Jobs)", en: "Jobs" },
+        partner: { hi: "पार्टनर", en: "Partner" },
+        helpdesk: { hi: "हेल्पडेस्क", en: "Helpdesk" }
+    };
+
+    let currentLangIndex = localStorage.getItem("app_language") || "hi";
+
+    function applyIndexLanguage() {
+        const t = idxLang[currentLangIndex];
+        document.getElementById("langToggleIndex").innerText = t.langToggle;
+        document.getElementById("logoText").innerText = t.logo;
+        document.getElementById("searchInput").placeholder = t.searchPlaceholder;
+        document.getElementById("micIcon").setAttribute("data-alert", t.micAlert);
+        document.getElementById("sponsorText").innerText = t.sponsorText;
+        document.getElementById("sponsorContact").innerHTML = t.sponsorContact;
+        document.getElementById("publicTitle").innerText = t.publicTitle;
+        document.getElementById("businessTitle").innerText = t.businessTitle;
+
+        const cards = document.querySelectorAll("#publicServices .card h3");
+        const labels = [t.bazaar, t.hunar, t.yatra, t.purana, t.shiksha, t.rozgar];
+        for (let i = 0; i < cards.length; i++) {
+            cards[i].innerText = labels[i];
+        }
+
+        document.getElementById("shopBtnText").innerText = t.shopBtn;
+        document.getElementById("partnerBtnText").innerText = t.partnerBtn;
+
+        const supportLink = document.getElementById("supportLink");
+        supportLink.innerHTML = t.support;
+        supportLink.href = "https://wa.me/918960220009?text=" + encodeURIComponent(t.supportWhatsAppMsg);
+
+        document.getElementById("stickyAdText").innerText = t.stickyAd;
+    }
+
+    function toggleLangIndex() {
+        currentLangIndex = currentLangIndex === "hi" ? "en" : "hi";
+        localStorage.setItem("app_language", currentLangIndex);
+        applyIndexLanguage();
+    }
+
+    function comingSoon(featureKey) {
+        const t = idxLang[currentLangIndex];
+        const featName = featureKeys[featureKey] ? featureKeys[featureKey][currentLangIndex] : featureKey;
+        alert(t.comingSoon(featName));
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const saved = localStorage.getItem("app_language");
+        if (saved) currentLangIndex = saved;
+        applyIndexLanguage();
+    });
+</script>
+</body>
+</html>

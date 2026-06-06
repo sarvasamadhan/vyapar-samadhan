@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>खाता बुक - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; color: #1e293b; padding: 15px; padding-bottom: 30px; }
+        .header { background: linear-gradient(145deg, #0f2b5c, #1e3a8a 40%, #2563eb); color: white; padding: 18px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(30,58,138,0.2); }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .lang-btn { background: white; color: #1e3a8a; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+        .sum-card { padding: 14px; border-radius: 14px; text-align: center; color: white; font-weight: 800; }
+        .bg-red { background: #ef4444; }
+        .bg-green { background: #10b981; }
+        .search-box { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; margin-bottom: 12px; font-size: 14px; }
+        .section { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .cust-card { border: 1px solid #e2e8f0; border-left: 5px solid #ef4444; border-radius: 12px; padding: 14px; margin-bottom: 10px; background: #f8fafc; }
+        .cust-card.advance { border-left-color: #10b981; }
+        .btn-group { display: flex; gap: 8px; margin-top: 10px; }
+        .btn-sm { flex: 1; border: none; padding: 8px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 12px; color: white; }
+        .btn-wa { background: #25d366; }
+        .btn-pay { background: #10b981; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 id="pageTitle">📖 खाता बुक</h2>
+    <div style="display: flex; gap: 8px;">
+        <button class="nav-btn" onclick="goBack()">⬅ <span id="backLabel">वापस</span></button>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+</div>
+
+<div class="summary-grid">
+    <div class="sum-card bg-red"><div style="font-size:11px;" id="dueLabel">कुल उधारी</div><div style="font-size:20px;" id="totalDue">₹0</div></div>
+    <div class="sum-card bg-green"><div style="font-size:11px;" id="advanceLabel">कुल एडवांस</div><div style="font-size:20px;" id="totalAdvance">₹0</div></div>
+</div>
+
+<input type="text" class="search-box" id="custSearch" placeholder="🔍 ग्राहक खोजें..." onkeyup="renderKhata()">
+
+<div class="section"><div id="customerList"></div></div>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentSession = null, currentLang = localStorage.getItem("app_language") || "hi", allBills = [];
+
+    const dict = {
+        hi: { pageTitle:"📖 खाता बुक", backLabel:"वापस", langToggle:"English", dueLabel:"कुल उधारी", advanceLabel:"कुल एडवांस", waReminder:"📲 रिमाइंडर", payBtn:"💵 जमा करें" },
+        en: { pageTitle:"📖 Ledger Book", backLabel:"Back", langToggle:"हिंदी", dueLabel:"Total Due", advanceLabel:"Total Advance", waReminder:"📲 Reminder", payBtn:"💵 Pay" }
+    };
+    function applyLang() { const t=dict[currentLang]; for(let id in t){ let el=document.getElementById(id); if(el&&typeof t[id]==='string') el.innerText=t[id]; } renderKhata(); }
+    function toggleLang() { currentLang=currentLang==="hi"?"en":"hi"; localStorage.setItem("app_language",currentLang); applyLang(); }
+
+    async function fetchKhata() {
+        const {data}=await sb.from("transactions").select("*").eq("shop_code",currentSession.shop_code).eq("type","sale").eq("payment_mode","Udhar");
+        allBills=data||[]; renderKhata();
+    }
+
+    function renderKhata() {
+        const search=document.getElementById("custSearch").value.toLowerCase();
+        const map={}; let totalDue=0, totalAdv=0;
+        allBills.forEach(b=>{
+            const key=b.customer_mobile||b.customer_name||"अज्ञात";
+            if(!map[key]) map[key]={name:b.customer_name||key, mobile:b.customer_mobile||"", amount:0};
+            map[key].amount+=Number(b.balance||b.amount||0);
+        });
+        const list=document.getElementById("customerList"); list.innerHTML="";
+        Object.values(map).forEach(c=>{
+            if(c.amount===0) return;
+            const isAdv=c.amount<0;
+            if(isAdv) totalAdv+=Math.abs(c.amount); else totalDue+=c.amount;
+            if(search&&!c.name.toLowerCase().includes(search)&&!c.mobile.includes(search)) return;
+            list.innerHTML+=`<div class="cust-card ${isAdv?'advance':''}"><div style="display:flex;justify-content:space-between;"><div><b>${c.name}</b><br><small>${c.mobile}</small></div><div style="font-size:18px;font-weight:800;color:${isAdv?'#059669':'#dc2626'};">₹${Math.abs(c.amount)}</div></div><div class="btn-group"><button class="btn-sm btn-wa" onclick="sendReminder('${c.name}','${c.mobile}',${c.amount})">${dict[currentLang].waReminder}</button><button class="btn-sm btn-pay" onclick="alert('जमा सुविधा जल्द')">${dict[currentLang].payBtn}</button></div></div>`;
+        });
+        document.getElementById("totalDue").innerText="₹"+totalDue.toLocaleString("en-IN");
+        document.getElementById("totalAdvance").innerText="₹"+totalAdv.toLocaleString("en-IN");
+    }
+
+    function sendReminder(name,mobile,amount) {
+        const msg=`नमस्ते ${name} जी,\nआपकी ₹${Math.abs(amount)} की उधारी बाकी है। कृपया शीघ्र भुगतान करें।\nधन्यवाद।`;
+        window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`,"_blank");
+    }
+
+    function goBack() { window.location.href="dashboard.html"; }
+
+    window.onload=async()=>{
+        const s=localStorage.getItem("merchant_session"); if(!s){ window.location.href="vyapar_login.html"; return; }
+        currentSession=JSON.parse(s); applyLang(); fetchKhata();
+    };
+</script>
+</body>
+</html>

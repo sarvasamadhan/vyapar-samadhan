@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>डैशबोर्ड - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #f0f4f8; padding: 15px; padding-bottom: 85px; }
+        
+        .header { background: linear-gradient(135deg, #1e3a8a, #3b82f6); color: white; padding: 20px; border-radius: 18px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .lang-btn { background: white; color: #1e3a8a; border: none; padding: 6px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 12px; }
+        .header-info { display: flex; justify-content: space-between; flex-wrap: wrap; font-size: 12px; gap: 6px; margin-top: 6px; }
+        .badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 15px; font-weight: 600; font-size: 11px; }
+        .badge-trade { background: #0f766e; }
+
+        .search-bar { background: white; border-radius: 30px; padding: 10px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 18px; box-shadow: 0 3px 10px rgba(0,0,0,0.06); }
+        .search-bar input { flex: 1; border: none; outline: none; font-size: 14px; background: transparent; }
+        .search-bar i { color: #f97316; font-size: 16px; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+        .stat-card { background: white; padding: 16px 10px; border-radius: 14px; text-align: center; box-shadow: 0 3px 10px rgba(0,0,0,0.06); border-top: 4px solid; }
+        .stat-card:nth-child(1) { border-top-color: #f97316; }
+        .stat-card:nth-child(2) { border-top-color: #ef4444; }
+        .stat-card:nth-child(3) { border-top-color: #eab308; }
+        .stat-card:nth-child(4) { border-top-color: #10b981; }
+        .stat-label { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px; }
+        .stat-val { font-size: 22px; font-weight: 800; color: #1e293b; }
+
+        .dynamic-bar { background: #fef9c3; padding: 12px; border-radius: 25px; text-align: center; font-weight: 700; font-size: 13px; color: #854d0e; margin-bottom: 18px; cursor: pointer; border: 1px solid #fde047; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .menu-card { background: white; padding: 18px 8px; border-radius: 16px; text-align: center; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+        .menu-card:active { transform: scale(0.97); }
+        .menu-icon { font-size: 34px; margin-bottom: 6px; }
+        .menu-label { font-weight: 700; font-size: 13px; color: #1e293b; }
+
+        .b2b-btn { grid-column: span 2; background: linear-gradient(135deg, #0f766e, #14b8a6); color: white; padding: 16px; border-radius: 16px; font-weight: 700; font-size: 15px; cursor: pointer; border: none; }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 8px 8px 14px; border-top: 1px solid #e2e8f0; box-shadow: 0 -3px 10px rgba(0,0,0,0.04); z-index: 100; }
+        .nav-item { text-align: center; font-size: 10px; color: #64748b; cursor: pointer; font-weight: 600; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 2px; }
+        .nav-item.active { color: #f97316; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-top">
+        <h2 id="sName">व्यापार समाधान</h2>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+    <div class="header-info">
+        <span class="badge" id="userRoleBadge">👑 मालिक</span>
+        <span class="badge badge-trade" id="tradeRoleBadge">🏪 फुटकर</span>
+        <span id="bizType" style="font-size:12px;">🛒 किराना</span>
+    </div>
+</div>
+
+<div class="search-bar">
+    <i>🔍</i>
+    <input type="text" id="globalSearch" placeholder="खोजें...">
+    <i>🎤</i>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card"><div class="stat-label" id="labelSale">💰 आज की बिक्री</div><div class="stat-val" id="todaySale">₹0</div></div>
+    <div class="stat-card"><div class="stat-label" id="labelDue">📋 कुल बकाया</div><div class="stat-val" id="totalDue">₹0</div></div>
+    <div class="stat-card"><div class="stat-label" id="labelStock">⚠️ कम स्टॉक</div><div class="stat-val" id="lowStock">—</div></div>
+    <div class="stat-card"><div class="stat-label" id="labelStaff">🧑‍💼 स्टाफ</div><div class="stat-val" id="staffCount">0</div></div>
+</div>
+
+<div class="dynamic-bar" id="dynamicAction">✨ बारकोड स्कैनर ✨</div>
+
+<div class="menu-grid" id="menuGrid"></div>
+
+<div class="bottom-nav">
+    <div class="nav-item active" onclick="location.href='dashboard.html'"><i>🏠</i><span id="navHome">होम</span></div>
+    <div class="nav-item" onclick="location.href='bill.html'"><i>📝</i><span id="navBill">बिल</span></div>
+    <div class="nav-item" onclick="location.href='stock.html'"><i>📦</i><span id="navStock">स्टॉक</span></div>
+    <div class="nav-item" onclick="location.href='khata.html'"><i>📖</i><span id="navKhata">खाता</span></div>
+    <div class="nav-item" onclick="location.href='settings.html'"><i>⚙️</i><span id="navSettings">सेटिंग्स</span></div>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentSession = null, currentMerchant = null, currentLang = localStorage.getItem("app_language") || "hi";
+
+    const dict = {
+        hi: {
+            searchPH: "बिल, ग्राहक, प्रोडक्ट खोजें...",
+            labelSale:"💰 आज की बिक्री", labelDue:"📋 कुल बकाया", labelStock:"⚠️ कम स्टॉक", labelStaff:"🧑‍💼 स्टाफ",
+            navHome:"होम", navBill:"बिल", navStock:"स्टॉक", navKhata:"खाता", navSettings:"सेटिंग्स",
+            mBill:"📝 नया बिल", mStock:"📦 स्टॉक", mKhata:"📖 खाता बुक", mReport:"📊 रिपोर्ट", mStaff:"👥 स्टाफ़", mSettings:"⚙️ सेटिंग्स", mB2B:"🏢 B2B बाज़ार",
+            barcode:"📷 बारकोड स्कैनर", sizeChart:"📏 साइज़ चार्ट", expiry:"⚠️ एक्सपायरी अलर्ट", special:"✨ विशेष सुविधा"
+        },
+        en: {
+            searchPH:"Search bill, customer, product...",
+            labelSale:"💰 Today's Sale", labelDue:"📋 Total Due", labelStock:"⚠️ Low Stock", labelStaff:"🧑‍💼 Staff",
+            navHome:"Home", navBill:"Bill", navStock:"Stock", navKhata:"Ledger", navSettings:"Settings",
+            mBill:"📝 New Bill", mStock:"📦 Stock", mKhata:"📖 Ledger", mReport:"📊 Reports", mStaff:"👥 Staff", mSettings:"⚙️ Settings", mB2B:"🏢 B2B Market",
+            barcode:"📷 Barcode Scanner", sizeChart:"📏 Size Chart", expiry:"⚠️ Expiry Alert", special:"✨ Special Feature"
+        }
+    };
+
+    function t(key) { return dict[currentLang][key] || key; }
+    function applyLang() {
+        document.getElementById("langToggleBtn").innerText = currentLang === "hi" ? "English" : "हिंदी";
+        document.getElementById("globalSearch").placeholder = t("searchPH");
+        ["labelSale","labelDue","labelStock","labelStaff","navHome","navBill","navStock","navKhata","navSettings"].forEach(id => { let el=document.getElementById(id); if(el) el.innerText=t(id); });
+        if(currentMerchant) { buildMenu(); updateDynamic(); }
+    }
+    function toggleLang() { currentLang = currentLang === "hi" ? "en" : "hi"; localStorage.setItem("app_language", currentLang); applyLang(); }
+
+    function getBiz(cat) {
+        const m={grocery:"🛒 किराना",cloth:"👕 कपड़ा",hardware:"🔨 हार्डवेयर",electronics:"⚡ इलेक्ट्रॉनिक्स",jewel:"💎 सराफा",clinic:"🩺 क्लिनिक",lab:"🔬 लैब",gym:"🏋️ जिम",hotel:"🏨 होटल",brick:"🧱 ईंट भट्टा",mills:"🏗️ मिल",custom:"⚙️ अन्य"};
+        return m[cat] || cat;
+    }
+
+    function updateDynamic() {
+        const cat = currentMerchant.business_category;
+        const dyn = document.getElementById("dynamicAction");
+        if(cat==="grocery") dyn.innerText = "✨ "+t("barcode")+" ✨";
+        else if(cat==="cloth") dyn.innerText = "✨ "+t("sizeChart")+" ✨";
+        else if(cat==="clinic"||cat==="lab") dyn.innerText = "✨ "+t("expiry")+" ✨";
+        else dyn.innerText = "✨ "+t("special")+" ✨";
+    }
+
+    function buildMenu() {
+        const isOwner = currentSession.role === "MERCHANT";
+        let menus = isOwner ? [
+            {icon:"📝",label:t("mBill"),link:"bill.html"},{icon:"📦",label:t("mStock"),link:"stock.html"},
+            {icon:"📖",label:t("mKhata"),link:"khata.html"},{icon:"📊",label:t("mReport"),link:"report.html"},
+            {icon:"👥",label:t("mStaff"),link:"staff.html"},{icon:"⚙️",label:t("mSettings"),link:"settings.html"}
+        ] : [
+            {icon:"📝",label:t("mBill"),link:"bill.html"},{icon:"📖",label:t("mKhata"),link:"khata.html"}
+        ];
+        let html = menus.map(m=>`<div class="menu-card" onclick="location.href='${m.link}'"><div class="menu-icon">${m.icon}</div><div class="menu-label">${m.label}</div></div>`).join("");
+        if(isOwner) html += `<button class="b2b-btn" onclick="location.href='b2b_market.html'">${t("mB2B")}</button>`;
+        document.getElementById("menuGrid").innerHTML = html;
+    }
+
+    async function loadStats() {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const {data:b} = await sb.from("transactions").select("amount").eq("shop_code",currentSession.shop_code).eq("type","sale").gte("date",today);
+            document.getElementById("todaySale").innerText = "₹"+(b?b.reduce((s,r)=>s+Number(r.amount),0):0).toLocaleString("en-IN");
+            const {data:d} = await sb.from("transactions").select("balance").eq("shop_code",currentSession.shop_code).gt("balance",0);
+            document.getElementById("totalDue").innerText = "₹"+(d?d.reduce((s,r)=>s+Number(r.balance),0):0).toLocaleString("en-IN");
+            const {data:st} = await sb.from("staff").select("id").eq("shop_code",currentSession.shop_code).eq("status","APPROVED");
+            document.getElementById("staffCount").innerText = st?st.length:0;
+        } catch(e) {
+            document.getElementById("todaySale").innerText="₹0"; document.getElementById("totalDue").innerText="₹0"; document.getElementById("staffCount").innerText="0";
+        }
+    }
+
+    window.onload = async () => {
+        const sl = localStorage.getItem("app_language"); if(sl==="en"||sl==="hi") currentLang=sl;
+        applyLang();
+        const s = localStorage.getItem("merchant_session"); if(!s){ window.location.href="vyapar_login.html"; return; }
+        try { currentSession = JSON.parse(s); } catch(e) { localStorage.removeItem("merchant_session"); window.location.href="vyapar_login.html"; return; }
+        const {data,error} = await sb.from("merchants").select("*").eq("shop_code",currentSession.shop_code).single();
+        if(error||!data){ localStorage.removeItem("merchant_session"); window.location.href="vyapar_login.html"; return; }
+        currentMerchant = data;
+        document.getElementById("sName").innerText = currentMerchant.shop_name || "व्यापार समाधान";
+        document.getElementById("bizType").innerText = getBiz(currentMerchant.business_category);
+        document.getElementById("userRoleBadge").innerText = currentSession.role==="MERCHANT"?"👑 मालिक":"👥 स्टाफ";
+        document.getElementById("tradeRoleBadge").innerText = "🏪 फुटकर";
+        updateDynamic(); buildMenu(); loadStats();
+    };
+</script>
+</body>
+</html>

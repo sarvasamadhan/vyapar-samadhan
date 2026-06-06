@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B2B बाज़ार - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; color: #1e293b; padding: 15px; padding-bottom: 90px; }
+        .header { background: linear-gradient(145deg, #0f766e, #14b8a6); color: white; padding: 18px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(15,118,110,0.2); }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .lang-btn { background: white; color: #0f766e; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .section { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .section-title { font-size: 16px; font-weight: 700; color: #0f766e; margin-bottom: 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .input-box { flex: 1; }
+        .input-box label { font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 3px; }
+        input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
+        .btn-primary { background: #0f766e; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px; margin-top: 5px; }
+        .item-card { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+        .qty-control { display: flex; align-items: center; gap: 8px; }
+        .qty-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-weight: 700; cursor: pointer; }
+        .qty-input { width: 40px; text-align: center; border: none; background: transparent; font-weight: 700; font-size: 16px; }
+        .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); z-index: 100; }
+        .btn-order { background: #ea580c; color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 id="pageTitle">🏢 B2B थोक बाज़ार</h2>
+    <div style="display: flex; gap: 8px;">
+        <button class="nav-btn" onclick="goBack()">⬅ <span id="backLabel">वापस</span></button>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title" id="connectTitle">🔗 सप्लायर से जुड़ें</div>
+    <div class="input-row"><div class="input-box"><label id="supplierLabel">सप्लायर मोबाइल</label><input type="text" id="supplierMobile" placeholder="मोबाइल नंबर"></div></div>
+    <button class="btn-primary" onclick="connectSupplier()" id="connectBtn">सप्लायर का स्टॉक देखें</button>
+</div>
+
+<div id="supplierSection" style="display:none;">
+    <div class="section"><div class="section-title" id="catalogTitle">📦 सप्लायर कैटलॉग</div><div id="catalogList"></div></div>
+</div>
+
+<div class="cart-bar" id="cartBar" style="display:none;">
+    <div><div style="font-size:12px;">कुल ऑर्डर</div><div style="font-size:20px;font-weight:800;">₹<span id="cartTotal">0</span></div></div>
+    <button class="btn-order" onclick="placeOrder()" id="orderBtn">🛒 ऑर्डर भेजें</button>
+</div>
+
+<script>
+    let currentLang=localStorage.getItem("app_language")||"hi", cart={};
+    const dict={
+        hi:{ pageTitle:"🏢 B2B थोक बाज़ार", backLabel:"वापस", langToggle:"English", connectTitle:"🔗 सप्लायर से जुड़ें", supplierLabel:"सप्लायर मोबाइल", connectBtn:"सप्लायर का स्टॉक देखें", catalogTitle:"📦 सप्लायर कैटलॉग", orderBtn:"🛒 ऑर्डर भेजें" },
+        en:{ pageTitle:"🏢 B2B Wholesale Market", backLabel:"Back", langToggle:"हिंदी", connectTitle:"🔗 Connect Supplier", supplierLabel:"Supplier Mobile", connectBtn:"View Supplier Stock", catalogTitle:"📦 Supplier Catalog", orderBtn:"🛒 Place Order" }
+    };
+    function applyLang(){ const t=dict[currentLang]; for(let id in t){ let el=document.getElementById(id); if(el&&typeof t[id]==='string') el.innerText=t[id]; } }
+    function toggleLang(){ currentLang=currentLang==="hi"?"en":"hi"; localStorage.setItem("app_language",currentLang); applyLang(); }
+
+    function connectSupplier(){
+        document.getElementById("supplierSection").style.display="block";
+        document.getElementById("catalogList").innerHTML=`
+            <div class="item-card"><div><b>सीमेंट (ACC)</b><br><span style="color:#ea580c;">₹400 / बोरी</span></div><div class="qty-control"><button class="qty-btn" onclick="changeQty('सीमेंट',-1,400)">-</button><span class="qty-input" id="qty_सीमेंट">0</span><button class="qty-btn" onclick="changeQty('सीमेंट',1,400)">+</button></div></div>
+            <div class="item-card"><div><b>एशियन पेंट्स</b><br><span style="color:#ea580c;">₹2500 / बाल्टी</span></div><div class="qty-control"><button class="qty-btn" onclick="changeQty('पेंट',-1,2500)">-</button><span class="qty-input" id="qty_पेंट">0</span><button class="qty-btn" onclick="changeQty('पेंट',1,2500)">+</button></div></div>`;
+    }
+
+    function changeQty(name,delta,price){
+        if(!cart[name]) cart[name]={qty:0,price};
+        cart[name].qty=Math.max(0,cart[name].qty+delta);
+        document.getElementById("qty_"+name).innerText=cart[name].qty;
+        updateCart();
+    }
+
+    function updateCart(){
+        let total=0,count=0;
+        Object.values(cart).forEach(c=>{ total+=c.qty*c.price; count+=c.qty; });
+        document.getElementById("cartTotal").innerText=total.toLocaleString("en-IN");
+        document.getElementById("cartBar").style.display=count>0?"flex":"none";
+    }
+
+    function placeOrder(){ alert("✅ ऑर्डर सप्लायर को भेज दिया गया!"); cart={}; updateCart(); }
+    function goBack(){ window.location.href="dashboard.html"; }
+    window.onload=()=>{ applyLang(); };
+</script>
+</body>
+</html>

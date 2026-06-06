@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>व्यापार समाधान - एडमिन</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; padding: 15px; background: #f1f5f9; margin: 0; }
+        h2 { color: #1e3a8a; text-align: center; margin-top: 0; }
+        #searchBox { width: 100%; padding: 15px; margin-bottom: 20px; border: 2px solid #1e3a8a; border-radius: 12px; font-size: 16px; box-sizing: border-box; background: white; }
+        .card { background: white; padding: 15px; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .info b { display: block; font-size: 16px; color: #1e3a8a; }
+        .info span { font-size: 13px; color: #64748b; }
+        .btn { padding: 12px 20px; background: #16a34a; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <h2>🚀 क्विक अनलॉक पैनल</h2>
+    
+    <!-- सर्च बॉक्स -->
+    <input type="text" id="searchBox" placeholder="🔍 दुकान का नाम, मोबाइल या कोड डालें..." onkeyup="filterMerchants()">
+
+    <div id="merchantList">डेटा लोड हो रहा है...</div>
+
+    <script>
+        const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+        
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let allMerchants = []; 
+
+        async function loadMerchants() {
+            const list = document.getElementById("merchantList");
+            const { data, error } = await sb.from("merchants").select("shop_code, shop_name, identifier, reset_approved");
+            
+            if (error) { list.innerHTML = "एरर: " + error.message; return; }
+            
+            allMerchants = data || []; 
+            renderList(allMerchants);
+        }
+
+        function renderList(listData) {
+            const list = document.getElementById("merchantList");
+            list.innerHTML = "";
+            if (listData.length === 0) { list.innerHTML = "कोई व्यापारी नहीं मिला!"; return; }
+            
+            listData.forEach(m => {
+                const div = document.createElement("div");
+                div.className = "card";
+                div.innerHTML = `
+                    <div class="info">
+                        <b>${m.shop_name}</b>
+                        <span>ID: ${m.identifier} | कोड: ${m.shop_code}</span>
+                    </div>
+                    <button class="btn" ${m.reset_approved === 'YES' ? 'disabled' : ''} onclick="unlock('${m.shop_code}')">
+                        ${m.reset_approved === 'YES' ? 'अनलॉक है' : 'अनलॉक'}
+                    </button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function filterMerchants() {
+            const term = document.getElementById("searchBox").value.toLowerCase();
+            const filtered = allMerchants.filter(m => 
+                (m.shop_name && m.shop_name.toLowerCase().includes(term)) || 
+                (m.identifier && m.identifier.toLowerCase().includes(term)) ||
+                (m.shop_code && m.shop_code.toLowerCase().includes(term))
+            );
+            renderList(filtered);
+        }
+
+        async function unlock(code) {
+            const { error } = await sb.from("merchants").update({ reset_approved: "YES" }).eq("shop_code", code);
+            if (error) { alert("एरर: " + error.message); } else {
+                alert("सफल! व्यापारी अब पिन रिसेट कर सकता है।");
+                loadMerchants(); // डेटा रिफ्रेश करें
+            }
+        }
+
+        loadMerchants();
+    </script>
+</body>
+</html>

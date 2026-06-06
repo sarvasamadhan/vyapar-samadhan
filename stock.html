@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>स्टॉक मैनेजमेंट - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; color: #1e293b; padding: 15px; padding-bottom: 90px; }
+        .header { background: linear-gradient(145deg, #0f2b5c, #1e3a8a 40%, #2563eb); color: white; padding: 18px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; box-shadow: 0 8px 20px rgba(30,58,138,0.2); }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .lang-btn { background: white; color: #1e3a8a; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+        .section { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .section-title { font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .input-box { flex: 1; min-width: 100px; }
+        .input-box label { font-size: 11px; font-weight: 700; color: #475569; display: block; margin-bottom: 3px; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; background: #f8fafc; }
+        input:focus, select:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        .btn-add { background: #10b981; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; font-size: 14px; }
+        .btn-save-all { background: #2563eb; color: white; border: none; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 10px; font-size: 15px; }
+        .draft-section { display: none; background: #fffbeb; border: 2px dashed #f59e0b; padding: 15px; border-radius: 14px; margin-bottom: 15px; }
+        .draft-item { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid #f59e0b; }
+        .stock-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .stock-table th { background: #f1f5f9; padding: 10px; text-align: left; font-weight: 700; font-size: 13px; }
+        .stock-table td { padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 13px; }
+        .search-box { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 10px; margin-bottom: 12px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 id="pageTitle">🏢 स्टॉक मैनेजमेंट</h2>
+    <div style="display: flex; gap: 8px;">
+        <button class="nav-btn" onclick="goBack()">⬅ <span id="backLabel">वापस</span></button>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-title" id="addItemTitle">📦 नया सामान जोड़ें</div>
+    <div class="input-row">
+        <div class="input-box" style="flex:2;"><label id="itemNameLabel">आइटम नाम</label><input type="text" id="itemName"></div>
+        <div class="input-box"><label id="gstLabel">GST %</label><select id="itemGST"><option value="0">0%</option><option value="5">5%</option><option value="12">12%</option><option value="18" selected>18%</option><option value="28">28%</option></select></div>
+    </div>
+    <div class="input-row">
+        <div class="input-box"><label id="qtyLabel">मात्रा</label><input type="number" id="itemQty"></div>
+        <div class="input-box"><label id="unitLabel">इकाई</label><select id="itemUnit"><option value="पीस">पीस</option><option value="किलो">किलो</option><option value="बोरी">बोरी</option><option value="पैकेट">पैकेट</option><option value="लीटर">लीटर</option></select></div>
+    </div>
+    <div class="input-row">
+        <div class="input-box"><label id="buyPriceLabel">खरीद रेट (₹)</label><input type="number" id="buyPrice"></div>
+        <div class="input-box"><label id="sellPriceLabel">बिक्री रेट (₹)</label><input type="number" id="sellPrice"></div>
+    </div>
+    <button class="btn-add" onclick="addToDraft()" id="addBtn">+ ड्राफ़्ट में जोड़ें</button>
+</div>
+
+<div id="draftSection" class="draft-section">
+    <h3 style="color:#b45309; margin-bottom:10px;" id="draftTitle">📄 ड्राफ़्ट सूची</h3>
+    <div id="draftList"></div>
+    <button class="btn-save-all" onclick="saveAllStock()" id="saveAllBtn">🚀 सभी सेव करें</button>
+</div>
+
+<div class="section">
+    <div class="section-title" id="stockListTitle">📋 स्टॉक सूची</div>
+    <input type="text" class="search-box" id="stockSearch" placeholder="🔍 खोजें..." onkeyup="renderStockTable()">
+    <table class="stock-table"><thead><tr><th id="thItem">आइटम</th><th id="thQty">मात्रा</th><th id="thPrice">रेट (₹)</th><th>❌</th></tr></thead><tbody id="stockBody"></tbody></table>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentSession = null, currentLang = localStorage.getItem("app_language") || "hi";
+    let draftItems = [], allStock = [];
+
+    const dict = {
+        hi: { pageTitle:"🏢 स्टॉक मैनेजमेंट", backLabel:"वापस", langToggle:"English", addItemTitle:"📦 नया सामान जोड़ें", itemNameLabel:"आइटम नाम", gstLabel:"GST %", qtyLabel:"मात्रा", unitLabel:"इकाई", buyPriceLabel:"खरीद रेट (₹)", sellPriceLabel:"बिक्री रेट (₹)", addBtn:"+ ड्राफ़्ट में जोड़ें", draftTitle:"📄 ड्राफ़्ट सूची", saveAllBtn:"🚀 सभी सेव करें", stockListTitle:"📋 स्टॉक सूची", thItem:"आइटम", thQty:"मात्रा", thPrice:"रेट (₹)", alertNoItem:"कृपया आइटम का नाम और मात्रा भरें!", alertSuccess:"✅ स्टॉक सेव हो गया!" },
+        en: { pageTitle:"🏢 Stock Management", backLabel:"Back", langToggle:"हिंदी", addItemTitle:"📦 Add New Item", itemNameLabel:"Item Name", gstLabel:"GST %", qtyLabel:"Quantity", unitLabel:"Unit", buyPriceLabel:"Buy Price (₹)", sellPriceLabel:"Sell Price (₹)", addBtn:"+ Add to Draft", draftTitle:"📄 Draft List", saveAllBtn:"🚀 Save All", stockListTitle:"📋 Stock List", thItem:"Item", thQty:"Qty", thPrice:"Price (₹)", alertNoItem:"Please enter item name and quantity!", alertSuccess:"✅ Stock saved!" }
+    };
+
+    function applyLang() { const t=dict[currentLang]; for(let id in t){ let el=document.getElementById(id); if(el&&typeof t[id]==='string') el.innerText=t[id]; } }
+    function toggleLang() { currentLang=currentLang==="hi"?"en":"hi"; localStorage.setItem("app_language",currentLang); applyLang(); }
+
+    function addToDraft() {
+        const t=dict[currentLang];
+        const name=document.getElementById("itemName").value.trim(), qty=document.getElementById("itemQty").value, unit=document.getElementById("itemUnit").value, gst=document.getElementById("itemGST").value, buy=document.getElementById("buyPrice").value||0, sell=document.getElementById("sellPrice").value||0;
+        if(!name||!qty){ alert(t.alertNoItem); return; }
+        draftItems.push({name,qty,unit,gst,buy,sell});
+        document.getElementById("itemName").value=""; document.getElementById("itemQty").value=""; document.getElementById("buyPrice").value=""; document.getElementById("sellPrice").value="";
+        renderDraft();
+    }
+
+    function renderDraft() {
+        const list=document.getElementById("draftList"); list.innerHTML="";
+        if(draftItems.length>0) document.getElementById("draftSection").style.display="block";
+        else document.getElementById("draftSection").style.display="none";
+        draftItems.forEach((item,i)=>{ list.innerHTML+=`<div class="draft-item"><span><b>${item.name}</b> (${item.qty} ${item.unit}) - ₹${item.sell}</span><button style="background:none;border:none;color:red;font-size:16px;cursor:pointer;" onclick="draftItems.splice(${i},1);renderDraft();">❌</button></div>`; });
+    }
+
+    async function saveAllStock() {
+        const t=dict[currentLang];
+        if(draftItems.length===0) return;
+        const rows=draftItems.map(i=>({ shop_code:currentSession.shop_code, item_name:i.name, quantity:parseInt(i.qty), unit:i.unit, gst_percent:parseInt(i.gst), buy_price:parseFloat(i.buy), sell_price:parseFloat(i.sell) }));
+        const {error}=await sb.from("inventory").insert(rows);
+        if(!error){ alert(t.alertSuccess); draftItems=[]; renderDraft(); fetchStock(); }
+        else alert(error.message);
+    }
+
+    async function fetchStock() {
+        const {data}=await sb.from("inventory").select("*").eq("shop_code",currentSession.shop_code);
+        allStock=data||[]; renderStockTable();
+    }
+
+    function renderStockTable() {
+        const search=document.getElementById("stockSearch").value.toLowerCase();
+        const filtered=allStock.filter(i=>i.item_name.toLowerCase().includes(search));
+        const body=document.getElementById("stockBody");
+        body.innerHTML=filtered.map(i=>`<tr><td>${i.item_name}</td><td>${i.quantity} ${i.unit}</td><td>₹${i.sell_price}</td><td><button style="background:none;border:none;color:red;cursor:pointer;" onclick="deleteStock('${i.id}')">❌</button></td></tr>`).join("")||"<tr><td colspan='4'>कोई स्टॉक नहीं</td></tr>";
+    }
+
+    async function deleteStock(id) { await sb.from("inventory").delete().eq("id",id); fetchStock(); }
+
+    function goBack() { window.location.href="dashboard.html"; }
+
+    window.onload=async()=>{
+        const s=localStorage.getItem("merchant_session"); if(!s){ window.location.href="vyapar_login.html"; return; }
+        currentSession=JSON.parse(s); applyLang(); fetchStock();
+    };
+</script>
+</body>
+</html>

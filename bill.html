@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>नया बिल - व्यापार समाधान</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #eef2f7; color: #1e293b; padding: 15px; padding-bottom: 90px; }
+        .header { background: linear-gradient(145deg, #0f2b5c, #1e3a8a 40%, #2563eb); color: white; padding: 18px 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 20px rgba(30,58,138,0.2); margin-bottom: 18px; }
+        .header h2 { font-size: 22px; font-weight: 800; }
+        .nav-btns { display: flex; gap: 8px; }
+        .nav-btn { background: rgba(255,255,255,0.2); color: white; border: none; padding: 7px 14px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+        .lang-btn { background: white; color: #1e3a8a; border: none; padding: 7px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 13px; }
+
+        .card { background: white; padding: 18px; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 6px 16px rgba(0,0,0,0.05); }
+        .card-title { font-size: 15px; font-weight: 700; color: #1e3a8a; margin-bottom: 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .input-box { flex: 1; min-width: 120px; }
+        .input-box label { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block; }
+        input, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; background: #f8fafc; transition: all 0.2s; }
+        input:focus, select:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+
+        .btn-add { background: #10b981; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; font-size: 14px; }
+        .cart-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+        .cart-table th { background: #f1f5f9; padding: 10px; text-align: left; font-weight: 700; color: #334155; }
+        .cart-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        .btn-del { background: #fee2e2; color: #b91c1c; border: none; border-radius: 6px; padding: 5px 10px; font-weight: 700; cursor: pointer; }
+
+        .pay-box { background: #eff6ff; border: 1px solid #bfdbfe; padding: 18px; border-radius: 16px; }
+        .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: 800; color: #1e3a8a; margin-bottom: 15px; }
+
+        .btn-save { background: #2563eb; color: white; border: none; padding: 16px; border-radius: 16px; font-size: 17px; font-weight: 800; width: 100%; cursor: pointer; box-shadow: 0 8px 18px rgba(37,99,235,0.25); position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 500px; z-index: 100; }
+
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.8); color: white; justify-content: center; align-items: center; z-index: 1000; flex-direction: column; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div id="loader" class="loading-overlay">
+    <div style="font-size: 40px; margin-bottom: 10px;">⏳</div>
+    <div id="loaderMsg">बिल बन रहा है, कृपया रुकें...</div>
+</div>
+
+<div class="header">
+    <h2 id="pageTitle">📝 नया बिल</h2>
+    <div class="nav-btns">
+        <button class="nav-btn" onclick="goBack()"><span>⬅</span> <span id="backLabel">वापस</span></button>
+        <button class="lang-btn" id="langToggleBtn" onclick="toggleLang()">English</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title" id="customerTitle">👤 ग्राहक का विवरण</div>
+    <div class="input-row">
+        <div class="input-box" style="flex: 2;">
+            <label id="custNameLabel">ग्राहक का नाम</label>
+            <input type="text" id="custName" placeholder="नाम लिखें">
+        </div>
+        <div class="input-box">
+            <label id="custMobileLabel">मोबाइल नंबर</label>
+            <input type="tel" id="custMobile" placeholder="नंबर">
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-title" id="itemsTitle">📦 सामान जोड़ें</div>
+    <div class="input-row">
+        <div class="input-box" style="flex: 2;">
+            <label id="itemNameLabel">आइटम / सामान</label>
+            <input type="text" id="itemName" placeholder="क्या बिक रहा है?">
+        </div>
+    </div>
+    <div class="input-row">
+        <div class="input-box">
+            <label id="qtyLabel">मात्रा (Qty)</label>
+            <input type="number" id="itemQty" value="1">
+        </div>
+        <div class="input-box">
+            <label id="priceLabel">रेट (₹)</label>
+            <input type="number" id="itemPrice" placeholder="0">
+        </div>
+    </div>
+    <button class="btn-add" id="addBtn" onclick="addToCart()">+ पर्चे में जोड़ें</button>
+
+    <table class="cart-table" id="cartTable" style="display: none;">
+        <thead><tr><th id="thItem">सामान</th><th id="thQty">मात्रा</th><th id="thTotal">कुल</th><th>❌</th></tr></thead>
+        <tbody id="cartBody"></tbody>
+    </table>
+</div>
+
+<div class="card pay-box">
+    <div class="total-row">
+        <span id="totalLabel">कुल बिल (Total):</span>
+        <span id="grandTotal">₹0</span>
+    </div>
+    <div class="input-row">
+        <div class="input-box">
+            <label id="receivedLabel" style="color:#059669;">जमा किया (Received ₹)</label>
+            <input type="number" id="amtReceived" placeholder="0" onkeyup="calculateBalance()">
+        </div>
+        <div class="input-box">
+            <label id="balanceLabel" style="color:#dc2626;">बाकी / उधार (Balance ₹)</label>
+            <input type="number" id="amtBalance" value="0" readonly style="background:#fee2e2; color:#b91c1c; font-weight:bold;">
+        </div>
+    </div>
+    <div class="input-box" style="margin-top: 10px;">
+        <label id="payModeLabel">पैसे कैसे आए?</label>
+        <select id="payMode">
+            <option value="Cash" id="optCash">नकद (Cash)</option>
+            <option value="UPI" id="optUPI">ऑनलाइन (UPI/PhonePe)</option>
+            <option value="Udhar" id="optUdhar">पूरा उधार</option>
+        </select>
+    </div>
+</div>
+
+<button class="btn-save" id="saveBtn" onclick="saveBill()">✅ बिल सेव करें</button>
+
+<script>
+    const SUPABASE_URL = "https://awfnnbohknhwlmbcebmg.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3Zm5uYm9oa25od2xtYmNlYm1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5ODU2NzcsImV4cCI6MjA5NTU2MTY3N30.NC0nHC7vEvMloyEXDODJvWnpVAVTzcxEAc05tx_K6pg";
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const dict = {
+        hi: {
+            langToggle: "English",
+            pageTitle: "📝 नया बिल",
+            backLabel: "वापस",
+            customerTitle: "👤 ग्राहक का विवरण",
+            custNameLabel: "ग्राहक का नाम",
+            custNamePlaceholder: "नाम लिखें",
+            custMobileLabel: "मोबाइल नंबर",
+            custMobilePlaceholder: "नंबर",
+            itemsTitle: "📦 सामान जोड़ें",
+            itemNameLabel: "आइटम / सामान",
+            itemNamePlaceholder: "क्या बिक रहा है?",
+            qtyLabel: "मात्रा (Qty)",
+            priceLabel: "रेट (₹)",
+            addBtn: "+ पर्चे में जोड़ें",
+            thItem: "सामान",
+            thQty: "मात्रा",
+            thTotal: "कुल",
+            totalLabel: "कुल बिल (Total):",
+            receivedLabel: "जमा किया (Received ₹)",
+            balanceLabel: "बाकी / उधार (Balance ₹)",
+            payModeLabel: "पैसे कैसे आए?",
+            optCash: "नकद (Cash)",
+            optUPI: "ऑनलाइन (UPI/PhonePe)",
+            optUdhar: "पूरा उधार",
+            saveBtn: "✅ बिल सेव करें",
+            loaderMsg: "बिल बन रहा है, कृपया रुकें...",
+            alertNoItem: "कृपया सामान का नाम और रेट डालें!",
+            alertNoCart: "पर्चे में कोई सामान नहीं है!",
+            alertSuccess: "🎉 बिल सफलतापूर्वक सेव हो गया!",
+            alertNetworkError: "⚠️ नेटवर्क में समस्या आई। कृपया इंटरनेट चेक करें।"
+        },
+        en: {
+            langToggle: "हिंदी",
+            pageTitle: "📝 New Bill",
+            backLabel: "Back",
+            customerTitle: "👤 Customer Details",
+            custNameLabel: "Customer Name",
+            custNamePlaceholder: "Enter name",
+            custMobileLabel: "Mobile Number",
+            custMobilePlaceholder: "Number",
+            itemsTitle: "📦 Add Items",
+            itemNameLabel: "Item / Product",
+            itemNamePlaceholder: "What is being sold?",
+            qtyLabel: "Quantity",
+            priceLabel: "Rate (₹)",
+            addBtn: "+ Add to Cart",
+            thItem: "Item",
+            thQty: "Qty",
+            thTotal: "Total",
+            totalLabel: "Total Bill:",
+            receivedLabel: "Received (₹)",
+            balanceLabel: "Balance / Due (₹)",
+            payModeLabel: "Payment Mode",
+            optCash: "Cash",
+            optUPI: "Online (UPI/PhonePe)",
+            optUdhar: "Full Credit",
+            saveBtn: "✅ Save Bill",
+            loaderMsg: "Saving bill, please wait...",
+            alertNoItem: "Please enter item name and rate!",
+            alertNoCart: "No items in cart!",
+            alertSuccess: "🎉 Bill saved successfully!",
+            alertNetworkError: "⚠️ Network error. Please check your internet."
+        }
+    };
+
+    let currentLang = localStorage.getItem("app_language") || "hi";
+    let cart = [];
+    let grandTotalAmount = 0;
+    let currentSession = null;
+
+    function applyLanguage() {
+        const t = dict[currentLang];
+        document.getElementById("langToggleBtn").innerText = t.langToggle;
+        document.getElementById("pageTitle").innerText = t.pageTitle;
+        document.getElementById("backLabel").innerText = t.backLabel;
+        document.getElementById("customerTitle").innerText = t.customerTitle;
+        document.getElementById("custNameLabel").innerText = t.custNameLabel;
+        document.getElementById("custName").placeholder = t.custNamePlaceholder;
+        document.getElementById("custMobileLabel").innerText = t.custMobileLabel;
+        document.getElementById("custMobile").placeholder = t.custMobilePlaceholder;
+        document.getElementById("itemsTitle").innerText = t.itemsTitle;
+        document.getElementById("itemNameLabel").innerText = t.itemNameLabel;
+        document.getElementById("itemName").placeholder = t.itemNamePlaceholder;
+        document.getElementById("qtyLabel").innerText = t.qtyLabel;
+        document.getElementById("priceLabel").innerText = t.priceLabel;
+        document.getElementById("addBtn").innerText = t.addBtn;
+        document.getElementById("thItem").innerText = t.thItem;
+        document.getElementById("thQty").innerText = t.thQty;
+        document.getElementById("thTotal").innerText = t.thTotal;
+        document.getElementById("totalLabel").innerText = t.totalLabel;
+        document.getElementById("receivedLabel").innerText = t.receivedLabel;
+        document.getElementById("balanceLabel").innerText = t.balanceLabel;
+        document.getElementById("payModeLabel").innerText = t.payModeLabel;
+        document.getElementById("optCash").innerText = t.optCash;
+        document.getElementById("optUPI").innerText = t.optUPI;
+        document.getElementById("optUdhar").innerText = t.optUdhar;
+        document.getElementById("saveBtn").innerText = t.saveBtn;
+        document.getElementById("loaderMsg").innerText = t.loaderMsg;
+    }
+
+    function toggleLang() {
+        currentLang = currentLang === "hi" ? "en" : "hi";
+        localStorage.setItem("app_language", currentLang);
+        applyLanguage();
+    }
+
+    window.onload = async function () {
+        applyLanguage();
+        const sessionStr = localStorage.getItem("merchant_session");
+        if (!sessionStr) {
+            window.location.href = "vyapar_login.html";
+            return;
+        }
+        try {
+            currentSession = JSON.parse(sessionStr);
+        } catch (e) {
+            localStorage.removeItem("merchant_session");
+            window.location.href = "vyapar_login.html";
+        }
+    };
+
+    function addToCart() {
+        const t = dict[currentLang];
+        let name = document.getElementById("itemName").value.trim();
+        let qty = Number(document.getElementById("itemQty").value) || 0;
+        let price = Number(document.getElementById("itemPrice").value) || 0;
+        if (!name || price === 0) {
+            alert(t.alertNoItem);
+            return;
+        }
+        let total = qty * price;
+        cart.push({ name, qty, price, total });
+        document.getElementById("itemName").value = "";
+        document.getElementById("itemQty").value = "1";
+        document.getElementById("itemPrice").value = "";
+        renderCart();
+    }
+
+    function renderCart() {
+        let tbody = document.getElementById("cartBody");
+        tbody.innerHTML = "";
+        grandTotalAmount = 0;
+        if (cart.length > 0) {
+            document.getElementById("cartTable").style.display = "table";
+        } else {
+            document.getElementById("cartTable").style.display = "none";
+        }
+        cart.forEach((item, index) => {
+            grandTotalAmount += item.total;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.qty} x ₹${item.price}</td>
+                    <td>₹${item.total}</td>
+                    <td><button class="btn-del" onclick="removeFromCart(${index})">X</button></td>
+                </tr>
+            `;
+        });
+        document.getElementById("grandTotal").innerText = "₹" + grandTotalAmount;
+        document.getElementById("amtReceived").value = grandTotalAmount;
+        calculateBalance();
+    }
+
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+    }
+
+    function calculateBalance() {
+        let received = Number(document.getElementById("amtReceived").value) || 0;
+        let balance = grandTotalAmount - received;
+        document.getElementById("amtBalance").value = balance;
+        let payMode = document.getElementById("payMode");
+        if (balance === grandTotalAmount && grandTotalAmount > 0) {
+            payMode.value = "Udhar";
+        } else if (payMode.value === "Udhar" && received > 0) {
+            payMode.value = "Cash";
+        }
+    }
+
+    async function saveBill() {
+        const t = dict[currentLang];
+        if (cart.length === 0) {
+            alert(t.alertNoCart);
+            return;
+        }
+        let custName = document.getElementById("custName").value.trim() || "नकद ग्राहक";
+        let custMobile = document.getElementById("custMobile").value.trim();
+        let received = Number(document.getElementById("amtReceived").value) || 0;
+        let balance = Number(document.getElementById("amtBalance").value) || 0;
+        let payMode = document.getElementById("payMode").value;
+
+        let itemsString = cart.map(i => `${i.name} (${i.qty} x ₹${i.price})`).join(", ");
+        let billType = balance > 0 ? "Udhar" : "Cash";
+
+        document.getElementById("loader").style.display = "flex";
+
+        const { error } = await sb.from("transactions").insert([{
+            shop_code: currentSession.shop_code,
+            type: "sale",
+            amount: grandTotalAmount,
+            received: received,
+            balance: balance,
+            payment_mode: payMode,
+            customer_name: custName,
+            customer_mobile: custMobile,
+            items: itemsString,
+            bill_type: billType,
+            date: new Date().toISOString()
+        }]);
+
+        document.getElementById("loader").style.display = "none";
+
+        if (error) {
+            alert(t.alertNetworkError + " (" + error.message + ")");
+        } else {
+            alert(t.alertSuccess);
+            window.location.href = "dashboard.html";
+        }
+    }
+
+    function goBack() {
+        window.location.href = "dashboard.html";
+    }
+</script>
+</body>
+</html>
